@@ -7,7 +7,7 @@ from multiprocessing import Value
 from sched import scheduler
 import time
 from typing import Any, Union
-import regex
+import re
 
 from uritemplate import variables
 import lifx
@@ -284,9 +284,9 @@ def getValue(word=None) -> Any:
         return False
     elif value.isnumeric():
         return int(value)
-    elif regex.match('[0-9]+:[0-9]+', value):
+    elif re.match('[0-9]+:[0-9]+', value):
         return int(value.replace(':', ''))
-    elif regex.match('[0-9]+\\.[0-9]+', value):
+    elif re.match('[0-9]+\\.[0-9]+', value):
         return float(value)
     elif value == 'TIME':
         return int(time.strftime('%H%M'))
