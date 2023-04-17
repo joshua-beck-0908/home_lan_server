@@ -1,8 +1,4 @@
-from multiprocessing import process
-from pickle import TRUE
-from tabnanny import check
 import pytest
-from sympy import O
 from ruleman import *
 
 def test_rulevar():

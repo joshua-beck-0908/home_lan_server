@@ -6,8 +6,7 @@ from math import e
 from multiprocessing import Value
 from sched import scheduler
 import time
-from typing import Any
-from numpy import invert
+from typing import Any, Union
 import regex
 
 from uritemplate import variables
@@ -214,7 +213,9 @@ def setVariable(variable: str, value: Any) -> None:
     else:
         variables[variable] = RuleVar(value)
          
-def exportVariable(variable: str | RuleVar) -> Any:
+#python 3.9 compatibility
+def exportVariable(variable: Union(str, RuleVar) -> Any:
+#def exportVariable(variable: str | RuleVar) -> Any:
     # Grabs an internal variable and strips the RuleVar wrapper.
     if type(variable) == str:
         rv = getVariable(variable)
@@ -253,7 +254,8 @@ def nextWord() -> str:
         return ruleWords.pop(0)
     return ''
 
-def nextWordIs(word: str|list) -> bool:
+def nextWordIs(word: Union(str, list)) -> bool:
+#def nextWordIs(word: str|list) -> bool:
     global ruleWords
     if len(ruleWords) > 0:
         if type(word) == list:
