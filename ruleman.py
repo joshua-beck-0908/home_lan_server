@@ -214,7 +214,7 @@ def setVariable(variable: str, value: Any) -> None:
         variables[variable] = RuleVar(value)
          
 #python 3.9 compatibility
-def exportVariable(variable: Union(str, RuleVar) -> Any:
+def exportVariable(variable: Union[str, RuleVar]) -> Any:
 #def exportVariable(variable: str | RuleVar) -> Any:
     # Grabs an internal variable and strips the RuleVar wrapper.
     if type(variable) == str:
@@ -254,7 +254,7 @@ def nextWord() -> str:
         return ruleWords.pop(0)
     return ''
 
-def nextWordIs(word: Union(str, list)) -> bool:
+def nextWordIs(word: Union[str, list]) -> bool:
 #def nextWordIs(word: str|list) -> bool:
     global ruleWords
     if len(ruleWords) > 0:
