@@ -423,6 +423,10 @@ def addLightVariables():
     print(variables)
     setVariable('KELVIN', lifx.props['kelvin'])
     setVariable('BRIGHTNESS', lifx.props['brightness'])
+    allLamps = RuleVar(vartype='GROUP')
+    setVariable('LAMPS', allLamps)
+    allLamps += [getVariableValue(light.upper()) for light in lifx.props['lightPower']]
+
     
 def logStatement() -> None:
     logType = nextWord()
@@ -467,7 +471,7 @@ def updateLights():
 
 def updateActiveVariables():
     for sensor in sensorVariable:
-        setVariable(sensorVariable[sensor]['var'].upper(), getPresence(sensor, timeout=30))
+        setVariable(sensorVariable[sensor]['var'].upper(), getPresence(sensor))
     
 
 def checkRules():
@@ -490,13 +494,12 @@ def run(rules: str) -> None:
 def addSensorVariables():
     for sensor in sensorVariable.values():
         setVariable(sensor['var'], False)
-
+        
 def init():
     global scheduler
     addLightVariables()
     addSensorVariables()
-    run('SET HOME TO TRUE; SET AUTO TO TRUE')
-    run('CREATE GROUP LAMPS; ADD BL AND KL AND LRL TO LAMPS')
+    run('SET HOME TO TRUE AND AUTO TO TRUE AND SLEEP TO FALSE')
     # Start the scheduler
     scheduler = BackgroundScheduler()
     scheduler.add_job(checkRules, 'interval', seconds=10)

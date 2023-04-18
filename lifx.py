@@ -46,7 +46,7 @@ def runcmd(cmd: Callable, *args, **kwargs) -> None:
         try:
             return cmd(*args, **kwargs)
         except lifxlan.errors.WorkflowException:
-            time.sleep(0.5)
+            time.sleep(0.2)
         
 def turnOn(bulb: str) -> None:
     if props['lightPower'][bulb]:
