@@ -74,8 +74,6 @@ def setMode(brightness, kelvin) -> None:
         
 def readData(data: dict) -> None:
     # Read data from the server
-    print(data)
-    print(json.dumps(data, sort_keys=True, indent=4))
     if 'mode' in data:
         setMode(data['mode']['brightness'], data['mode']['kelvin'])
     if 'bulbs' in data:

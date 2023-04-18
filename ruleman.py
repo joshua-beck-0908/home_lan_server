@@ -477,17 +477,15 @@ def updateActiveVariables():
 def checkRules():
     updateActiveVariables()
     for rule in rules:
-        print(rule)
         processCommand(rule)
     updateLights()
         
 def run(rules: str) -> None:
-    print(f'Colour Temperature Before: LIFX-{lifx.props["kelvin"]} VAR-{getVariable("KELVIN")}')
     for rule in rules.split(';'):
         rule = rule.strip()
         print(rule)
+        print(variables) # debug
         processCommand(rule)
-    print(f'Colour Temperature After: LIFX-{lifx.props["kelvin"]} VAR-{getVariable("KELVIN")}')
     # Check if this affected the state of the system.
     checkRules()
 
