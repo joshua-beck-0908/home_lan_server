@@ -331,7 +331,7 @@ def checkCondition(checkVal=None) -> bool:
     if operation == 'NOT':
         return not checkCondition(checkVal)
     if operation == 'SET':
-        return type(checkVal) == RuleVar
+        return checkVal == True
     elif operation == 'BETWEEN':
         value1 = getNumericValue()
         if nextWord() != 'AND':
