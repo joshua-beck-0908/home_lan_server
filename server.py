@@ -23,7 +23,10 @@ def lights():
 def sensor():
     print(flask.request.get_data())
     data = flask.request.get_json()
-    presence.presenceSensor(data['sensor'])
+    if 'sensor' in data:
+        presence.presenceSensor(data['sensor'])
+    elif 'magsensor' in data:
+        presence.magneticSensor(data['magsensor'])
     return 'OK'
 
 @app.route('/cmd', methods=['POST'])

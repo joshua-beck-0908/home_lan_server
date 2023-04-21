@@ -10,6 +10,9 @@ sensorVariable = {
 }
 
 
+def magneticSensor(sensor: str) -> None:
+    presenceSensor(f'm_{sensor}')
+    
 def presenceSensor(sensor: str) -> None:
     # Record the time a sensor was triggered.
     sensorTime[sensor] = time.time()
