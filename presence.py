@@ -7,6 +7,7 @@ sensorVariable = {
     '3485186e670': {'var': 'bs1', 'light': 'bl'},
     '348518589a8': {'var': 'ks1', 'light': 'kl'},
     '34851859cd4': {'var': 'lrs1', 'light': 'lrl'},
+    'm_3485187428': {'var': 'entrys1', 'light': 'entry'},
 }
 
 
@@ -16,7 +17,8 @@ def magneticSensor(sensor: str) -> None:
 def presenceSensor(sensor: str) -> None:
     # Record the time a sensor was triggered.
     sensorTime[sensor] = time.time()
-    run('SET ' + sensorVariable[sensor]['var'].upper() + ' TO TRUE')
+    if sensor in sensorVariable:
+        run('SET ' + sensorVariable[sensor]['var'].upper() + ' TO TRUE')
     
 def getPresence(sensor: str, timeout=120) -> bool:
     # Check if a sensor has been triggered recently.
