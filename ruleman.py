@@ -8,10 +8,9 @@ from sched import scheduler
 import time
 from typing import Any, Union
 import re
-import comm
 
 import lifx
-from presence import presenceSensor, getPresence, sensorVariable
+from presence import getPresence, sensorVariable
 from apscheduler.schedulers.background import BackgroundScheduler
 
 functionName = None
