@@ -5,8 +5,8 @@ import time
 sensorTime = {}
 sensorVariable = {
     '3485186e670': {'var': 'bs1', 'light': 'bl'},
-    '348518589a8': {'var': 'ks1', 'light': 'kl'},
-    '34851859cd4': {'var': 'lrs1', 'light': 'lrl'},
+    '34851859cd4': {'var': 'ks1', 'light': 'kl'},
+    '348518589a8': {'var': 'lrs1', 'light': 'lrl'},
     'm_3485187428': {'var': 'entrys1', 'light': 'entry'},
 }
 

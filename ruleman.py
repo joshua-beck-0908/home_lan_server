@@ -8,11 +8,18 @@ from sched import scheduler
 import time
 from typing import Any, Union
 import re
+import comm
 
-from uritemplate import variables
 import lifx
 from presence import presenceSensor, getPresence, sensorVariable
 from apscheduler.schedulers.background import BackgroundScheduler
+
+functionName = None
+inComment = False
+
+dataTypes = ['SWITCH', 'NUMBER', 'DECIMAL', 'TEXT']
+dataClasses = ['INPUT', 'OUTPUT', 'VARIABLE']
+pluralClasses = ['INPUTS', 'OUTPUTS', 'VARIABLES']
 
 class RuleSyntaxError(ValueError):
     pass
@@ -20,6 +27,7 @@ class RuleSyntaxError(ValueError):
 @total_ordering
 class RuleVar:
     def __init__(self, value=None, vartype=''):
+        self.props = {}
         if vartype == '':
             if type(value) == list:
                 self.vartype = 'GROUP'
@@ -37,6 +45,60 @@ class RuleVar:
                 self.items = [value]
         else:
             self.value = value
+    def get(self, property):
+        property = property.upper()
+        if property == 'GROUP':
+            return self.props['VARTYPE'] == 'GROUP' 
+        elif property == 'NAME':
+            for var in variables:
+                if variables[var] == self:
+                    return var
+        elif property == 'VALUE':
+            if self.props['VARTYPE'] == 'GROUP':
+                return self.props['ITEMS']
+            else:
+                return self.props['VALUE']
+        else:
+            return self.props[property]
+        
+    def set(self, property, value):
+        property = property.upper()
+        if property == 'GROUP':
+            if value:
+                self.props['VARTYPE'] = 'GROUP'
+            else:
+                self.props['VARTYPE'] = 'VARIABLE'
+        elif property == 'NAME':
+            for var in variables:
+                if variables[var] == self:
+                    variables[value] = self
+                    del variables[var]
+        elif property == 'VALUE':
+            if self.props['VARTYPE'] == 'GROUP':
+                for item in self.props['ITEMS']:
+                    if type(item) == RuleVar:
+                        item.set('VALUE', value)
+            else:
+                self.props['VALUE'] = value
+    
+        else:
+            self.props[property] = value
+            
+    def __getattr__(self, name: str):
+        #print('Getting', name)
+        if name == 'props':
+            return super().__getattribute__('PROPS')
+        else:
+            return self.get(name)
+    
+    def __setattr__(self, name: str, value: Any) -> None:
+        #print('Setting', name, 'to', value)
+        if name == 'props':
+            super().__setattr__('PROPS', value)
+        else:
+            self.set(name, value)
+
+
     def __repr__(self):
         if self.vartype == 'GROUP':
             return f'<RuleVar GROUP: {self.items}>'
@@ -164,14 +226,6 @@ class RuleVar:
             else:
                 return self.value < other
             
-    def set(self, value):
-        if self.vartype == 'GROUP':
-            for item in self.items:
-                if type(item) == RuleVar:
-                    item.set(value)
-        else:
-            self.value = value
-    
 scheduler = None
 variables = {}
 rules = [
@@ -207,7 +261,7 @@ def getVariable(variable: str) -> RuleVar:
 def setVariable(variable: str, value: Any) -> None:
     # Set a variable.
     if variable in variables:
-        variables[variable].set(value)
+        variables[variable].set('value', value)
     elif type(value) == RuleVar:
         variables[variable] = value
     else:
@@ -396,6 +450,41 @@ def addStatement() -> None:
     else:
         var += sum([getValue(item) for item in items])
     #setVariable(name, var)
+    
+def defineStatement() -> None:
+    items = getList()
+    if nextWord() != 'AS':
+        dataType = 'ANY'
+        dataClass = 'ANY'
+    else:
+        dataType = nextWord()
+        dataClass = nextWord()
+        if dataClass == '':
+            dataClass = 'ANY'
+    for item in items:
+        if not checkVariableIsSet(item):
+            var = RuleVar()
+        else :
+            var = getVariable(item)
+        var.targetType = dataType
+        var.targetClass = dataClass
+        
+def expectStatement() -> None:
+    items = getList()
+    if nextWord() != 'AS':
+        dataType = 'ANY'
+        dataClass = 'ANY'
+    else:
+        dataType = nextWord()
+        dataClass = nextWord()
+        if dataClass == '':
+            dataClass = 'ANY'
+    for item in items:
+        if not checkVariableIsSet(item):
+            raise RuleSyntaxError('Variable not set', item)
+        var = getVariable(item)
+        var.targetType = dataType
+        var.targetClass = dataClass
 
 def toggleStatement() -> None:
     items = getList()
@@ -436,12 +525,44 @@ def logStatement() -> None:
         value = getValue()
         print(value)
     
+def startBlockCommand() -> None:
+    global inComment, functionName
+    blockType = nextWord()
+    if blockType == 'NOTE':
+        inComment = True
+    elif blockType == 'FUNCTION':
+        functionName = nextWord()
+        newVar = RuleVar(vartype='GROUP')
+        newVar.set('runable', True)
+        setVariable(functionName, newVar)
+    else:
+        raise RuleSyntaxError('Expected NOTE or FUNCTION')
+    
+def endBlockCommand() -> None:
+    global inComment, functionName
+    blockType = nextWord()
+    if blockType == 'NOTE':
+        inComment = False
+    elif blockType == 'FUNCTION':
+        functionName = None
+    else:
+        raise RuleSyntaxError('Expected NOTE or FUNCTION')
+    
 def processCommand(statement: str=None) -> None:
     try:
         if statement != None:
             startRule(statement)
         command = nextWord()
-        if command == 'IF':
+        if len(command) == 0:
+            return
+        if command == 'END':
+            endBlockCommand()
+        elif functionName != None:
+            variable = getVariable(functionName)
+            variable += statement
+        elif inComment:
+            return
+        elif command == 'IF':
             if ifStatement():
                 nextWord()
                 processCommand()
@@ -457,6 +578,16 @@ def processCommand(statement: str=None) -> None:
             turnStatement()
         elif command == 'LOG':
             logStatement()
+        elif command == 'NOTE':
+            return
+        elif command == 'DEFINE':
+            defineStatement()
+        elif command == 'EXPECT':
+            expectStatement()
+        elif command == 'START':
+            startBlockCommand()
+        elif checkVariableIsSet(command):
+            run(getVariableValue(command))
         else:
             raise RuleSyntaxError('Unknown command: ' + command)
     except RuleSyntaxError as e:
@@ -476,28 +607,51 @@ def updateActiveVariables():
 
 def checkRules():
     updateActiveVariables()
-    for rule in rules:
-        processCommand(rule)
+    if checkVariableIsSet('ENVIRONMENT'):
+        for cmd in getVariable('ENVIRONMENT').value:
+            processCommand(cmd)
     updateLights()
         
-def run(rules: str) -> None:
-    for rule in rules.split(';'):
-        rule = rule.strip()
+def run(rules: Union[list, str]) -> None:
+    if type(rules) == str:
+        runList = rules.split(';')
+    elif type(rules) == list:
+        runList = rules
+    elif type(rules) == RuleVar:
+        runList = rules.value
+    for rule in runList:
         print(rule)
-        print(variables) # debug
+        rule = rule.strip()
+        #print(variables) # debug
         processCommand(rule)
     # Check if this affected the state of the system.
     checkRules()
+
+def runFunction(name: str) -> None:
+
+    run(getVariableValue(name))
 
 def addSensorVariables():
     for sensor in sensorVariable.values():
         setVariable(sensor['var'], False)
         
+def loadRuleFile(filename: str) -> list:
+    try:
+        with open(f'ruleman/{filename}.rules', 'r') as f:
+            print(f'Loading {filename}.rules')
+            return f.read().splitlines()
+    except FileNotFoundError:
+        return ''
+    
+def runRuleFile(filename: str) -> None:
+    run(loadRuleFile(filename))
+
 def init():
-    global scheduler
+    global scheduler, rules
     addLightVariables()
     addSensorVariables()
-    run('SET HOME TO TRUE AND AUTO TO TRUE AND SLEEP TO FALSE')
+    runRuleFile('init')
+    runRuleFile('env')
     # Start the scheduler
     scheduler = BackgroundScheduler()
     scheduler.add_job(checkRules, 'interval', seconds=10)

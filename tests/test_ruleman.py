@@ -225,3 +225,8 @@ def test_setStatement():
     assert checkVariableValue('AB', 2) == True
     assert checkVariableValue('BC', 3) == True
     
+def test_function():
+    processCommand('START FUNCTION TEST; SET A TO 1; END FUNCTION')
+    assert checkVariableIsSet('TEST') == True
+    assert checkVariableValue('TEST', ['SET A TO 1']) == True
+    
